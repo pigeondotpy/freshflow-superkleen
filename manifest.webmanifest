@@ -1,0 +1,9 @@
+{
+  "name": "FreshFlow Superkleen",
+  "short_name": "FreshFlow",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7f5",
+  "theme_color": "#12251d",
+  "description": "Superkleen Dry Cleaners counter and order management app"
+}

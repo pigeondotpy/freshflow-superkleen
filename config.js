@@ -9,6 +9,11 @@ window.FRESHFLOW_CONFIG = {
 
 window.addEventListener('load', () => {
   const script = document.createElement('script');
-  script.src = '/v06.js?v=1';
+  script.src = '/v06.js?v=2';
+  script.onload = () => {
+    const cash = document.createElement('script');
+    cash.src = '/v06cash.js?v=1';
+    document.body.appendChild(cash);
+  };
   document.body.appendChild(script);
 });

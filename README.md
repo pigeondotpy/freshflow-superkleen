@@ -10,6 +10,8 @@ Static web application backed by Supabase Auth and PostgreSQL.
 
 Deploy the repository root to Vercel with no build command required.
 
+Git deployment trigger verified 2026-08-22.
+
 ## Database migration
 
 Run `supabase/migrations/20260822_v05_cashup.sql` in the Supabase SQL Editor before using Cash Up.

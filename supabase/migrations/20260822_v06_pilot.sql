@@ -1,0 +1,3 @@
+-- FreshFlow V0.6 pilot schema is applied to production through the connected Supabase project.
+-- This marker keeps the repository migration history aligned with production.
+-- Production migration name: freshflow_v06_pilot

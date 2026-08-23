@@ -1,0 +1,92 @@
+// FreshFlow V0.7 dashboard experience
+(() => {
+  const admin = () => ['owner','admin'].includes(window.profile?.role);
+  const todayISO = () => new Date().toISOString().slice(0,10);
+  const startOfMonth = () => { const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10); };
+  const safeMoney = v => typeof money==='function' ? money(v) : `R ${Number(v||0).toFixed(2)}`;
+  const safeEsc = v => typeof esc==='function' ? esc(v) : String(v??'');
+
+  const style = document.createElement('style');
+  style.textContent = `
+  .nav [data-v07]{border:0;background:transparent;color:#b9c8c1;padding:10px 3px;border-radius:9px;cursor:pointer;font-size:10px;text-align:center;width:100%;font-weight:500}
+  .nav [data-v07] b{display:block;font-size:17px;margin-bottom:3px;color:inherit}.nav [data-v07]:hover,.nav [data-v07].active{background:#20362e;color:#fff}
+  .nav .badge{display:inline-grid;min-width:16px;height:16px;padding:0 4px;place-items:center;border-radius:99px;background:#eaf4ef;color:#176b4b;font-size:8px;font-weight:900;margin-left:2px}
+  .ffdash{display:grid;gap:12px}.ffdash-head{display:flex;align-items:center;justify-content:space-between;gap:14px}.ffdash-head h1{font-size:25px;margin:0 0 3px}.ffdash-sub{font-size:11px;color:var(--muted)}
+  .ffdash-actions{display:flex;gap:7px;flex-wrap:wrap}.ffdash-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}.ffkpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px;min-width:0;box-shadow:var(--shadow)}
+  .ffkpi-top{display:flex;align-items:center;gap:9px}.ffkpi-icon{width:34px;height:34px;border-radius:9px;background:#eef6f2;display:grid;place-items:center;font-size:17px}.ffkpi label{font-size:9px;color:var(--muted);font-weight:800}.ffkpi strong{display:block;font-size:19px;margin-top:4px}.ffkpi small{font-size:8px;color:var(--muted)}.ffkpi.warn strong{color:#bd332d}
+  .ffdash-row{display:grid;grid-template-columns:1.2fr .9fr 1fr;gap:10px}.ffdash-bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.ffpanel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow);min-width:0}.ffpanel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.ffpanel-head h3{margin:0;font-size:13px}.fflink{border:0;background:transparent;color:var(--accent);font-size:9px;font-weight:800;cursor:pointer}
+  .ffbars{display:flex;align-items:end;gap:8px;height:150px;border-bottom:1px solid var(--line);padding:12px 4px 0}.ffbarwrap{flex:1;height:100%;display:flex;align-items:end;justify-content:center;position:relative}.ffbar{width:min(26px,65%);background:linear-gradient(#23815e,#176b4b);border-radius:6px 6px 0 0;min-height:3px}.ffbarlabel{text-align:center;font-size:8px;color:var(--muted);margin-top:6px}
+  .ffdonut-wrap{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center}.ffdonut{width:140px;height:140px;border-radius:50%;display:grid;place-items:center;position:relative}.ffdonut:after{content:'';width:82px;height:82px;background:#fff;border-radius:50%;position:absolute}.ffdonut-center{z-index:1;text-align:center}.ffdonut-center strong{display:block;font-size:24px}.ffdonut-center span{font-size:8px;color:var(--muted)}.fflegend{display:grid;gap:7px}.fflegend-row{display:grid;grid-template-columns:8px 1fr auto;gap:7px;align-items:center;font-size:9px}.ffdot{width:7px;height:7px;border-radius:50%}
+  .fflist{display:grid}.fflist-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 0;border-bottom:1px solid #edf0ee;cursor:pointer}.fflist-row:last-child{border-bottom:0}.fflist-main strong{font-size:10px}.fflist-main div{font-size:9px;color:var(--muted);margin-top:2px}.fflist-side{text-align:right;font-size:9px}.ffstatus{display:inline-block;padding:3px 6px;border-radius:99px;background:#eef2f0;font-size:8px;font-weight:800}.ffstatus.Ready{background:#e6f5eb;color:#1f7146}.ffstatus.Washing,.ffstatus.Drying{background:#e9f0f8;color:#355f8b}.ffstatus.Ironing{background:#fff0dd;color:#9a5f12}.ffoverdue{color:#be302a;font-weight:900}.ffservice{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0}.ffrank{width:18px;height:18px;border-radius:50%;background:#f0f3f1;display:grid;place-items:center;font-size:8px;font-weight:900}.ffservicebar{height:5px;background:#edf0ee;border-radius:99px;margin-top:4px;overflow:hidden}.ffservicebar span{display:block;height:100%;background:#23815e;border-radius:99px}.ffnotif{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #edf0ee}.ffnotif-icon{width:25px;height:25px;border-radius:7px;background:#f6f7f6;display:grid;place-items:center}.ffnotif strong{font-size:9px}.ffnotif div{font-size:8px;color:var(--muted)}
+  .ffquick{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.ffquick button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px;text-align:left;cursor:pointer}.ffquick button:hover{border-color:#9bc8b6}.ffquick b{display:block;font-size:10px}.ffquick span{font-size:8px;color:var(--muted)}
+  .ffadminonly{display:none}.ffadmin .ffadminonly{display:block}
+  @media(max-width:1250px){.ffdash-kpis{grid-template-columns:repeat(3,1fr)}.ffdash-row{grid-template-columns:1fr 1fr}.ffdash-row .ffrecent{grid-column:1/-1}.ffdash-bottom{grid-template-columns:1fr 1fr}.ffdash-bottom .ffnotifications{grid-column:1/-1}.ffquick{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:760px){.ffdash-head{align-items:flex-start;flex-direction:column}.ffdash-kpis,.ffdash-row,.ffdash-bottom{grid-template-columns:1fr}.ffdash-row .ffrecent,.ffdash-bottom .ffnotifications{grid-column:auto}.ffquick{grid-template-columns:repeat(2,1fr)}.ffdonut-wrap{grid-template-columns:1fr}.ffdonut{margin:auto}.main{padding-top:10px}}
+  `;
+  document.head.appendChild(style);
+
+  const labels={production:['▤','Production'],notifications:['◉','Alerts'],accounts:['◎','Accounts'],reports:['▥','Reports']};
+  document.querySelectorAll('.nav [data-v07]').forEach(b=>{const x=labels[b.dataset.v07];if(x)b.innerHTML=`<b>${x[0]}</b>${x[1]} ${b.dataset.v07==='production'?'<span id="prodBadge" class="badge">0</span>':b.dataset.v07==='notifications'?'<span id="noteBadge" class="badge">0</span>':''}`;});
+
+  function goBase(id,index){
+    document.getElementById('v07host')?.classList.add('hidden');
+    const btn=[...document.querySelectorAll('.navbtn')][index];
+    if(typeof go==='function') go(id,btn);
+  }
+
+  function kpi(icon,label,value,sub,cls=''){return `<div class="ffkpi ${cls}"><div class="ffkpi-top"><div class="ffkpi-icon">${icon}</div><div><label>${label}</label><strong>${value}</strong><small>${sub||''}</small></div></div></div>`}
+  function statusColour(s){return ({Received:'#aab6c8',Washing:'#4385c7',Drying:'#7e9ac2',Ironing:'#efb429',Ready:'#3daa64',Collected:'#168452'})[s]||'#b9c1bd'}
+
+  async function buildDashboard(){
+    const section=document.getElementById('dashboard');if(!section)return;
+    const now=new Date();const today=todayISO();const monthStart=startOfMonth();
+    let notifications=[];let top=[];let adminData=null;let expenses=[];
+    try{await sb.rpc('refresh_operational_notifications');const n=await sb.from('notifications').select('*').eq('status','open').order('created_at',{ascending:false}).limit(6);notifications=n.data||[]}catch(e){}
+    try{const oi=await sb.from('order_items').select('description,quantity,line_total,orders!inner(created_at,status)').gte('orders.created_at',monthStart+'T00:00:00');const map={};(oi.data||[]).forEach(x=>{if(x.orders?.status==='Cancelled')return;const name=(x.description||'Service').split(' · ').pop();map[name]=(map[name]||0)+Number(x.line_total||0)});top=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5)}catch(e){}
+    if(admin())try{const [d,e]=await Promise.all([sb.rpc('admin_dashboard',{p_from:monthStart,p_to:today}),sb.from('expenses').select('amount,expense_date').gte('expense_date',monthStart).lte('expense_date',today)]);adminData=d.data||{};expenses=e.data||[]}catch(e){}
+
+    const orders=data.orders||[];const payments=data.payments||[];const active=orders.filter(o=>!['Collected','Cancelled'].includes(o.status));const ready=orders.filter(o=>o.status==='Ready');const overdue=active.filter(o=>o.status!=='Ready'&&o.due_date&&o.due_date<today);const todayOrders=orders.filter(o=>zaDate(o.created_at)===today);const todayPayments=payments.filter(p=>zaDate(p.created_at)===today);const todaySales=todayPayments.reduce((s,p)=>s+Number(p.amount),0);const outstanding=orders.reduce((s,o)=>s+Math.max(0,Number(o.total)-paidFor(o.id)),0);
+    const statusNames=['Received','Washing','Drying','Ironing','Ready','Collected'];const counts=statusNames.map(s=>orders.filter(o=>o.status===s).length);const totalStatus=Math.max(1,counts.reduce((a,b)=>a+b,0));let pct=0;const parts=counts.map((c,i)=>{let start=pct;let end=pct+(c/totalStatus*100);pct=end;return `${statusColour(statusNames[i])} ${start}% ${end}%`}).join(',');
+    const days=[...Array(7)].map((_,i)=>{let d=new Date();d.setDate(d.getDate()-(6-i));return d});const sales7=days.map(d=>{let iso=d.toISOString().slice(0,10);return payments.filter(p=>zaDate(p.created_at)===iso).reduce((s,p)=>s+Number(p.amount),0)});const maxSales=Math.max(1,...sales7);
+    const recent=[...orders].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
+    const financialAdmin=admin();
+    section.className='view active';
+    section.innerHTML=`<div class="ffdash ${financialAdmin?'ffadmin':''}">
+      <div class="ffdash-head"><div><h1>Dashboard</h1><div class="ffdash-sub">Welcome back, ${safeEsc(profile?.full_name||'there')}. Here's what's happening at Superkleen today.</div></div><div class="ffdash-actions"><button class="btn secondary" onclick="refreshAll();setTimeout(renderFreshDashboard,150)">Refresh</button><button class="btn primary" onclick="(${goBase.toString()})('neworder',0)">+ New Sale</button></div></div>
+      <div class="ffdash-kpis">
+        ${kpi('R','Today’s Sales',financialAdmin?safeMoney(todaySales):'Hidden',financialAdmin?'Payments received today':'Admin only')}
+        ${kpi('▣','Orders Today',todayOrders.length,'Created today')}
+        ${kpi('♧','In Progress',active.length,'Open production orders')}
+        ${kpi('◷','Ready',ready.length,'Ready for collection')}
+        ${kpi('!','Overdue',overdue.length,'Past due date',overdue.length?'warn':'')}
+        ${kpi('R','Outstanding',financialAdmin?safeMoney(outstanding):'Hidden',financialAdmin?'Across unpaid orders':'Admin only')}
+      </div>
+      <div class="ffdash-row">
+        <div class="ffpanel ffadminonly"><div class="ffpanel-head"><h3>Sales Overview</h3><span class="muted" style="font-size:9px">Last 7 days</span></div><div style="display:flex;gap:28px;margin-bottom:5px"><div><span class="muted" style="font-size:8px">Month sales</span><strong style="display:block;font-size:19px">${safeMoney(adminData?.sales||0)}</strong></div><div><span class="muted" style="font-size:8px">Net after expenses</span><strong style="display:block;font-size:19px">${safeMoney(Number(adminData?.sales||0)-Number(adminData?.expenses||0))}</strong></div></div><div class="ffbars">${sales7.map((v,i)=>`<div class="ffbarwrap"><div class="ffbar" style="height:${Math.max(3,v/maxSales*100)}%" title="${safeMoney(v)}"></div></div>`).join('')}</div><div style="display:flex;gap:8px">${days.map(d=>`<div class="ffbarlabel" style="flex:1">${d.toLocaleDateString('en-ZA',{weekday:'short'})}</div>`).join('')}</div></div>
+        <div class="ffpanel"><div class="ffpanel-head"><h3>Orders by Status</h3><button class="fflink" onclick="openV07('production')">Production board</button></div><div class="ffdonut-wrap"><div class="ffdonut" style="background:conic-gradient(${parts})"><div class="ffdonut-center"><strong>${orders.length}</strong><span>Total orders</span></div></div><div class="fflegend">${statusNames.map((s,i)=>`<div class="fflegend-row"><span class="ffdot" style="background:${statusColour(s)}"></span><span>${s}</span><strong>${counts[i]}</strong></div>`).join('')}</div></div></div>
+        <div class="ffpanel ffrecent"><div class="ffpanel-head"><h3>Recent Orders</h3><button class="fflink" onclick="(${goBase.toString()})('orders',1)">View all</button></div><div class="fflist">${recent.map(o=>`<div class="fflist-row" onclick="openOrder('${o.id}')"><div class="fflist-main"><strong>#${o.order_number} · ${safeEsc(o.customerName||'Customer')}</strong><div>${zaDate(o.created_at)}</div></div><div class="fflist-side"><span class="ffstatus ${o.status}">${o.status}</span><div>${safeMoney(o.total)}</div></div></div>`).join('')||'<div class="empty">No orders yet.</div>'}</div></div>
+      </div>
+      <div class="ffdash-bottom">
+        <div class="ffpanel"><div class="ffpanel-head"><h3>Overdue Orders</h3><button class="fflink" onclick="openV07('production')">View all</button></div><div class="fflist">${overdue.slice(0,5).map(o=>{const days=Math.max(1,Math.ceil((new Date(today)-new Date(o.due_date))/86400000));return `<div class="fflist-row" onclick="openOrder('${o.id}')"><div class="fflist-main"><strong>#${o.order_number} · ${safeEsc(o.customerName||'Customer')}</strong><div class="ffoverdue">${days} day${days===1?'':'s'} overdue</div></div><div class="fflist-side"><strong>${safeMoney(o.total)}</strong></div></div>`}).join('')||'<div class="empty">No overdue orders.</div>'}</div></div>
+        <div class="ffpanel ffadminonly"><div class="ffpanel-head"><h3>Top Services This Month</h3><span class="muted" style="font-size:8px">By revenue</span></div>${top.map((x,i)=>`<div class="ffservice"><div class="ffrank">${i+1}</div><div><strong style="font-size:9px">${safeEsc(x[0])}</strong><div class="ffservicebar"><span style="width:${top[0]?x[1]/top[0][1]*100:0}%"></span></div></div><strong style="font-size:9px">${safeMoney(x[1])}</strong></div>`).join('')||'<div class="empty">No sales data yet.</div>'}</div>
+        <div class="ffpanel ffnotifications"><div class="ffpanel-head"><h3>Notifications</h3><button class="fflink" onclick="openV07('notifications')">View all</button></div>${notifications.map(n=>`<div class="ffnotif"><div class="ffnotif-icon">${n.priority==='high'?'!':'◷'}</div><div><strong>${safeEsc(n.title)}</strong><div>${safeEsc(n.body)}</div></div><span style="font-size:8px;color:var(--muted)">${new Date(n.created_at).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')||'<div class="empty">Nothing needs attention.</div>'}</div>
+      </div>
+      <div class="ffpanel"><div class="ffquick"><button onclick="(${goBase.toString()})('neworder',0)"><b>+ New Sale</b><span>Create customer order</span></button><button onclick="openV07('production')"><b>Production</b><span>Manage work queue</span></button><button onclick="(${goBase.toString()})('customers',2)"><b>Customers</b><span>Search customer history</span></button><button onclick="openV07('accounts')"><b>Accounts</b><span>Commercial and credit</span></button><button onclick="(${goBase.toString()})('cashup',4)"><b>Cash Up</b><span>Close the day</span></button>${financialAdmin?`<button onclick="openV07('reports')"><b>Owner Reports</b><span>Business analytics</span></button>`:`<button disabled><b>Reports</b><span>Admin only</span></button>`}</div></div>
+    </div>`;
+  }
+
+  window.renderFreshDashboard=buildDashboard;
+  const originalGo=window.go;
+  if(typeof originalGo==='function'){
+    window.go=function(id,b){
+      document.getElementById('v07host')?.classList.add('hidden');
+      originalGo(id,b);
+      if(id==='dashboard')setTimeout(buildDashboard,0);
+      document.querySelectorAll('.nav [data-v07]').forEach(x=>x.classList.remove('active'));
+    };
+  }
+  document.querySelectorAll('.nav [data-v07]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav [data-v07]').forEach(x=>x.classList.toggle('active',x===b));}));
+  const oldOpenV07=window.openV07;if(typeof oldOpenV07==='function')window.openV07=async function(view){document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));return oldOpenV07(view)};
+  const dashBtn=[...document.querySelectorAll('.navbtn')].find(x=>/overview/i.test(x.textContent||''));if(dashBtn)dashBtn.innerHTML='<b>⌂</b>Dashboard';
+  if(document.getElementById('dashboard')?.classList.contains('active'))buildDashboard();
+})();

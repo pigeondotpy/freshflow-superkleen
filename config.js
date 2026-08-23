@@ -15,7 +15,12 @@ window.addEventListener('load', () => {
     cash.src = '/v06cash.js?v=1';
     cash.onload = () => {
       const product = document.createElement('script');
-      product.src = '/v07.js?v=1';
+      product.src = '/v07.js?v=2';
+      product.onload = () => {
+        const dashboard = document.createElement('script');
+        dashboard.src = '/dashboard-v07.js?v=1';
+        document.body.appendChild(dashboard);
+      };
       document.body.appendChild(product);
     };
     document.body.appendChild(cash);

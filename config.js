@@ -13,6 +13,11 @@ window.addEventListener('load', () => {
   script.onload = () => {
     const cash = document.createElement('script');
     cash.src = '/v06cash.js?v=1';
+    cash.onload = () => {
+      const product = document.createElement('script');
+      product.src = '/v07.js?v=1';
+      document.body.appendChild(product);
+    };
     document.body.appendChild(cash);
   };
   document.body.appendChild(script);

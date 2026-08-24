@@ -25,6 +25,11 @@ window.addEventListener('load', () => {
           bridge.onload = () => {
             const complete = document.createElement('script');
             complete.src = '/v07-complete.js?v=1';
+            complete.onload = () => {
+              const business = document.createElement('script');
+              business.src = '/v08-business.js?v=1';
+              document.body.appendChild(business);
+            };
             document.body.appendChild(complete);
           };
           document.body.appendChild(bridge);

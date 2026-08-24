@@ -22,6 +22,11 @@ window.addEventListener('load', () => {
         dashboard.onload = () => {
           const bridge = document.createElement('script');
           bridge.src = '/profile-bridge.js?v=1';
+          bridge.onload = () => {
+            const complete = document.createElement('script');
+            complete.src = '/v07-complete.js?v=1';
+            document.body.appendChild(complete);
+          };
           document.body.appendChild(bridge);
         };
         document.body.appendChild(dashboard);

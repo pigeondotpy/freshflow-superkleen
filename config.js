@@ -28,6 +28,11 @@ window.addEventListener('load', () => {
             complete.onload = () => {
               const business = document.createElement('script');
               business.src = '/v08-business.js?v=1';
+              business.onload = () => {
+                const ui = document.createElement('script');
+                ui.src = '/ui-v09.js?v=1';
+                document.body.appendChild(ui);
+              };
               document.body.appendChild(business);
             };
             document.body.appendChild(complete);

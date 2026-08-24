@@ -42,13 +42,9 @@
   `;
   document.head.appendChild(style);
 
-  function polish(){
-    document.body.classList.add('freshflow-dark');
-    const mark=document.querySelector('.brandmark');if(mark)mark.textContent='SK';
-    const title=document.querySelector('.login p.muted');if(title)title.textContent='Powered by FreshFlow V0.9 Preview';
-    const version=document.querySelector('.shopcard span:last-child');if(version)version.textContent='V0.9 Preview';
-    document.title='FreshFlow V0.9 Preview | Superkleen';
-  }
-  polish();
-  new MutationObserver(polish).observe(document.body,{childList:true,subtree:true});
+  document.body.classList.add('freshflow-dark');
+  const mark=document.querySelector('.brandmark');if(mark)mark.textContent='SK';
+  const title=document.querySelector('.login p.muted');if(title)title.textContent='Powered by FreshFlow V0.9 Preview';
+  const version=document.querySelector('.shopcard span:last-child');if(version)version.textContent='V0.9 Preview';
+  document.title='FreshFlow V0.9 Preview | Superkleen';
 })();

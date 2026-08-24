@@ -15,10 +15,15 @@ window.addEventListener('load', () => {
     cash.src = '/v06cash.js?v=1';
     cash.onload = () => {
       const product = document.createElement('script');
-      product.src = '/v07.js?v=3';
+      product.src = '/v07.js?v=4';
       product.onload = () => {
         const dashboard = document.createElement('script');
-        dashboard.src = '/dashboard-v07.js?v=3';
+        dashboard.src = '/dashboard-v07.js?v=4';
+        dashboard.onload = () => {
+          const bridge = document.createElement('script');
+          bridge.src = '/profile-bridge.js?v=1';
+          document.body.appendChild(bridge);
+        };
         document.body.appendChild(dashboard);
       };
       document.body.appendChild(product);

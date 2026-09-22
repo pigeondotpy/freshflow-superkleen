@@ -33,7 +33,7 @@ window.addEventListener('load', () => {
                 ui.src = '/ui-v09.js?v=1';
                 ui.onload = () => {
                   const printers = document.createElement('script');
-                  printers.src = '/printer-routing-v09.js?v=1';
+                  printers.src = '/printer-routing-v09.js?v=2';
                   document.body.appendChild(printers);
                 };
                 document.body.appendChild(ui);

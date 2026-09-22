@@ -31,6 +31,11 @@ window.addEventListener('load', () => {
               business.onload = () => {
                 const ui = document.createElement('script');
                 ui.src = '/ui-v09.js?v=1';
+                ui.onload = () => {
+                  const printers = document.createElement('script');
+                  printers.src = '/printer-routing-v09.js?v=1';
+                  document.body.appendChild(printers);
+                };
                 document.body.appendChild(ui);
               };
               document.body.appendChild(business);

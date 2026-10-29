@@ -1,7 +1,7 @@
 // FreshFlow V0.7 product layer
 (() => {
  const isAdmin=()=>['owner','admin'].includes(window.profile?.role);
- document.title='FreshFlow V0.7 | Superkleen Dry Cleaners';
+ if(!window.profile)document.title='FreshFlow';
  const ver=document.querySelector('.shopcard span:last-child'); if(ver) ver.textContent='Cloud V0.7';
  const nav=document.querySelector('.nav');
  if(nav){

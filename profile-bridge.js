@@ -1,15 +1,15 @@
 // FreshFlow profile bridge
-// The core app declares `profile` with top-level let, so it is not a window property.
-// Newer dynamically loaded modules use window/globalThis. Keep them synchronised.
+// Sign-in copies the staff row onto window.profile. Later scripts read that,
+// because the counter's own `profile` binding is not visible to them.
 (() => {
   let attempts = 0;
   const timer = setInterval(() => {
     attempts++;
     try {
-      if (typeof profile !== 'undefined' && profile && profile.id) {
-        window.profile = profile;
-        window.FRESHFLOW_PROFILE = profile;
-        window.FRESHFLOW_ROLE = String(profile.role || 'staff').trim().toLowerCase();
+      const current = window.profile;
+      if (current && current.id) {
+        window.FRESHFLOW_PROFILE = current;
+        window.FRESHFLOW_ROLE = String(current.role || 'staff').trim().toLowerCase();
 
         const rolePill = document.getElementById('rolePill');
         if (rolePill) rolePill.textContent = window.FRESHFLOW_ROLE;

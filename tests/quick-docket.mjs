@@ -48,9 +48,20 @@ function jhbPlus(days) {
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
-function installMock(role) {
+function installMock(opts) {
+  const role = typeof opts === 'string' ? opts : (opts && opts.role);
+  const shopName = (opts && opts.shop) || 'Superkleen Dry Cleaners';
   if (navigator.serviceWorker) navigator.serviceWorker.register = () => Promise.resolve();
   const services = window.__ffServices;
+  const branchPrices = window.__ffBranchPrices || [];
+  const settings = window.__ffSettings || {
+    receipt_title: /superkleen/i.test(shopName) ? 'SUPERKLEEN' : shopName,
+    receipt_subtitle: /superkleen/i.test(shopName) ? 'DRY CLEANERS' : 'Dry Cleaners',
+    receipt_footer: /superkleen/i.test(shopName) ? 'Thank you for choosing Superkleen.' : 'Thank you for your business.',
+    message_name: /superkleen/i.test(shopName) ? 'Superkleen' : shopName,
+    receipt_address: /superkleen/i.test(shopName) ? '12 Main Road, Claremont' : '1 Harbour Road',
+    receipt_phone: '0215550101'
+  };
   const customers = [
     { id: 'c-amina', name: 'Amina Naidoo', phone: '0825551234', business_id: '20000000-0000-4000-8000-000000000001' },
     { id: 'c-sipho', name: 'Sipho Dlamini', phone: '0831112222', business_id: '20000000-0000-4000-8000-000000000001' }
@@ -87,7 +98,7 @@ function installMock(role) {
       branch_id: '20000000-0000-4000-8000-000000000002',
       full_name: 'Thandi Nkosi',
       role: window.__ffRole || 'owner',
-      businesses: { name: 'Superkleen Dry Cleaners', currency: 'ZAR' }
+      businesses: { name: shopName, currency: 'ZAR' }
     };
   }
   function from(table) {
@@ -105,7 +116,10 @@ function installMock(role) {
       if (table === 'customers') return { data: customers, error: null };
       if (table === 'orders') return { data: orders, error: null };
       if (table === 'payments') return { data: payments, error: null };
-      if (table === 'businesses') return { data: { id: staffRow().business_id, name: 'Superkleen Dry Cleaners' }, error: null };
+      if (table === 'businesses') return { data: { id: staffRow().business_id, name: shopName }, error: null };
+      if (table === 'branches') return { data: [{ id: '20000000-0000-4000-8000-000000000002', name: 'Main', active: true }], error: null };
+      if (table === 'branch_service_prices') return { data: branchPrices, error: null };
+      if (table === 'business_settings') return { data: { business_id: staffRow().business_id, ...settings }, error: null };
       return { data: [], error: null };
     };
     const b = {
@@ -162,9 +176,20 @@ function installMock(role) {
   localStorage.setItem('superkleen_favourites', JSON.stringify(['10000000-0000-4000-8000-000000000013']));
 }
 
-async function prepare(page, role) {
-  await page.addInitScript(list => { window.__ffServices = list; }, services);
-  await page.addInitScript(installMock, role);
+async function prepare(page, role, shop) {
+  await page.addInitScript(payload => {
+    window.__ffServices = payload.services;
+    window.__ffBranchPrices = payload.branchPrices;
+    window.__ffSettings = payload.settings || null;
+  }, {
+    services,
+    branchPrices: shop && !/superkleen/i.test(shop) ? [] : [
+      { branch_id: BRANCH, service_id: SHIRT, price: 60, active: true },
+      { branch_id: BRANCH, service_id: '10000000-0000-4000-8000-000000000014', price: 35, active: false }
+    ],
+    settings: null
+  });
+  await page.addInitScript(installMock, { role, shop: shop || 'Superkleen Dry Cleaners' });
   await page.route('https://cdn.jsdelivr.net/**', route => route.fulfill({
     status: 200,
     contentType: 'application/javascript',
@@ -196,7 +221,13 @@ async function main() {
   await login(page);
 
   const title = await page.title();
-  assert(title === 'Superkleen', 'title is ' + title);
+  assert(title.includes('Superkleen Dry Cleaners'), 'title is ' + title);
+  assert(title !== 'Superkleen', 'title is still the hard-coded shop name');
+  const shopLine = await page.locator('#ffqShopLine').innerText();
+  assert(shopLine.includes('Superkleen Dry Cleaners'), 'shop line ' + shopLine);
+  const shirtPrice = await page.locator(`#ffqTiles [data-add="${SHIRT}"] .ffq-tile-price`).innerText();
+  assert(shirtPrice.includes('60'), 'shirt tile price ' + shirtPrice);
+  assert(!shirtPrice.includes('45'), 'shirt tile still shows the shop price ' + shirtPrice);
   const loginCopy = await page.locator('.login p.muted').innerText();
   assert(/counter/i.test(loginCopy), 'login still shows version copy: ' + loginCopy);
 
@@ -266,16 +297,32 @@ async function main() {
   const trousers = first.args.p_items.find(i => i.service_id === TROUSERS);
   assert(first.args.p_items.length === 2, 'unexpected lines ' + JSON.stringify(first.args.p_items));
   assert(shirt && shirt.quantity === 2, 'shirt qty');
-  assert(trousers && trousers.quantity === 1, 'trousers qty');
+  assert(Number(shirt.unit_price) === 60, 'shirt sent the shop price ' + shirt.unit_price);
+  assert(trousers && trousers.quantity === 1 && Number(trousers.unit_price) === 55, 'trousers price ' + (trousers && trousers.unit_price));
   assert(String(shirt.description).includes('Shirt'), 'description ' + shirt.description);
   await page.waitForFunction(() => (window.__ffOpened || []).length > 0);
   const printed = await page.evaluate(() => window.__ffOpened.map(d => d.html).join('\n'));
   assert(printed.includes('Amina Naidoo'), 'receipt was not sent to the printer');
+  assert(printed.includes('SUPERKLEEN'), 'receipt heading changed: ' + printed.slice(0, 400));
+  assert(printed.includes('DRY CLEANERS'), 'receipt subtitle changed');
+  assert(printed.includes('Thank you for choosing Superkleen.'), 'receipt footer changed');
   assert(printed.includes('80mm') || printed.includes('76mm'), 'receipt is not on the thermal layout');
+  await page.evaluate(() => {
+    const id = (data.orders || []).slice().reverse().find(o => o.customerName === 'Amina Naidoo' && o.order_number >= 1500)?.id;
+    if (id) showReceipt(id);
+  });
+  await page.waitForSelector('#modal .receipt h2');
+  const preview = await page.locator('#modal .receipt').innerText();
+  assert(preview.includes('SUPERKLEEN') && preview.includes('Amina Naidoo'), 'receipt preview ' + preview);
+  await page.screenshot({ path: ARTIFACTS + '/quick_docket_receipt.png' });
+  await page.evaluate(() => closeModal());
   const savedBanner = await page.locator('#ffqLast').innerText();
   assert(savedBanner.includes('1502'), savedBanner);
 
   await page.locator('#ffqTiles .ffq-tile.other').click();
+  await page.fill('#ffqSearchInput', 'T-shirt');
+  const hiddenSearch = await page.locator('#ffqSearchResults').innerText();
+  assert(!/t-shirt/i.test(hiddenSearch), 'hidden branch item is on the counter: ' + hiddenSearch);
   await page.fill('#ffqSearchInput', 'Tie');
   await page.locator('#ffqSearchResults [data-add]').first().click();
   await page.locator('#ffqSearchClose').click();
@@ -345,6 +392,7 @@ async function main() {
   const staff = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   await prepare(staff, 'staff');
   await login(staff);
+  await staff.screenshot({ path: ARTIFACTS + '/quick_docket_staff_nav.png' });
   const ownerLabel = await staff.locator('[data-ffq="owner"] span').innerText();
   assert(ownerLabel === 'More', 'staff tab label ' + ownerLabel);
   await staff.locator('[data-ffq="owner"]').click();
@@ -353,6 +401,13 @@ async function main() {
   assert(!menu.includes('System check'), 'staff can see the system check');
   assert(!menu.includes('Reports'), 'staff can see owner reports');
   assert(menu.includes('All orders'));
+  await staff.locator('[data-ffq="cash"]').click();
+  await staff.waitForSelector('#ffqCashNote');
+  const cashCopy = await staff.locator('#cashup').innerText();
+  assert(/owner closes the till/i.test(cashCopy), 'cash up copy ' + cashCopy);
+  assert(await staff.locator('#cashup button.primary').isDisabled(), 'staff can close the till');
+  assert(!(await staff.evaluate(() => (window.__ffCalls || []).some(c => c.name === 'close_daily_cashup'))), 'staff closed the till');
+  await staff.locator('[data-ffq="owner"]').click();
   await staff.getByRole('button', { name: /Price list/ }).click();
   await staff.waitForSelector('#priceBookGrid .priceitem');
   const priceText = await staff.locator('#pricebook').innerText();
@@ -360,6 +415,30 @@ async function main() {
   assert(!priceText.includes('Add to counter'), 'staff can pin counter items');
   const staffErrors = staff.__pageErrors || [];
   assert(!staffErrors.length, 'staff page errors: ' + staffErrors.join('\n'));
+  await staff.close();
+
+  const other = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await prepare(other, 'owner', 'Harbour Laundry');
+  await login(other);
+  const otherTitle = await other.title();
+  assert(otherTitle.includes('Harbour Laundry'), 'other shop title ' + otherTitle);
+  assert(!/superkleen/i.test(otherTitle), 'other shop title still says Superkleen');
+  const otherLine = await other.locator('#ffqShopLine').innerText();
+  assert(otherLine === 'Harbour Laundry', 'other shop line ' + otherLine);
+  assert(!/superkleen/i.test(await other.locator('#app').innerText()), 'Harbour Laundry screen mentions Superkleen');
+  await other.locator(`#ffqTiles [data-add="${SHIRT}"]`).click();
+  const harbourPrice = await other.locator(`#ffqTiles [data-add="${SHIRT}"] .ffq-tile-price`).innerText();
+  assert(harbourPrice.includes('45'), 'Harbour shirt should use its shop price ' + harbourPrice);
+  await other.fill('#ffqPhone', '0719998877');
+  await other.fill('#ffqName', 'Noah Jacobs');
+  await other.locator('#ffqSave').click();
+  await other.waitForFunction(() => (window.__ffOpened || []).length > 0);
+  const harbourSlip = await other.evaluate(() => window.__ffOpened.map(d => d.html).join('\n'));
+  assert(harbourSlip.includes('Harbour Laundry'), 'Harbour receipt heading missing');
+  assert(!harbourSlip.includes('SUPERKLEEN'), 'Harbour receipt uses the Superkleen heading');
+  assert(!harbourSlip.includes('Thank you for choosing Superkleen.'), 'Harbour receipt uses the Superkleen footer');
+  const otherErrors = other.__pageErrors || [];
+  assert(!otherErrors.length, 'harbour page errors: ' + otherErrors.join('\n'));
   await browser.close();
   console.log('Quick Docket checks passed');
 }

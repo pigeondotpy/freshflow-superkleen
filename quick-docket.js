@@ -1,6 +1,7 @@
 // FreshFlow counter layer.
 // Quick Docket is the default staff screen. It reuses the existing cart,
 // create_order RPC, customer records, and the 80mm print route.
+// Tiles use the branch price (priceAt) and skip items that branch has hidden.
 // Loaded last so it sits on V0.5–V0.9 without replacing them.
 (() => {
   document.body.dataset.ffq = '1';
@@ -12,7 +13,19 @@
   const dueKey = () => 'superkleen_quick_due_days_' + biz();
   const digits = v => String(v || '').replace(/\D/g, '');
   const itemLabel = s => (s && (s.item_name || s.name)) || 'Item';
-  const priceLabel = s => (typeof money === 'function' ? money(s.price) : s.price) + (s.unit === 'kg' ? '/kg' : '');
+  const sellPrice = s => (typeof priceAt === 'function' ? priceAt(s) : Number(s && s.price) || 0);
+  const onCounter = s => !!s && (typeof serviceSellable !== 'function' || serviceSellable(s));
+  const priceLabel = s => (typeof money === 'function' ? money(sellPrice(s)) : sellPrice(s)) + (s.unit === 'kg' ? '/kg' : '');
+  const shopTitle = () => {
+    if (typeof profile === 'undefined' || !profile) return '';
+    try {
+      if (typeof shopBrand === 'function') {
+        const name = shopBrand().name;
+        if (name) return name;
+      }
+    } catch (err) { console.error(err); }
+    return (typeof data !== 'undefined' && data.business && data.business.name) || '';
+  };
 
   const SLOTS = [
     { re: /\bshirts?\b/i, avoid: /t-?\s?shirt|sweat|night/i, cat: /dry/i },
@@ -50,6 +63,7 @@
   body.ff-quick #rolePill{display:none!important}
   body.ff-quick .side{background:#fff!important;color:#102018!important;box-shadow:none!important;border-right:1px solid #d5e0d9!important}
   body.ff-quick .brand:after{color:#102018!important}
+  body.ff-quick .brandname{display:block!important;color:#102018!important;font-size:13px!important;font-weight:900!important;line-height:1.1!important;max-width:140px!important}
   body.ff-quick .brandmark{background:#14583d!important;color:#fff!important;box-shadow:none!important}
   body.ff-quick .shopcard{background:#e7f2ec!important;color:#102018!important;border:0!important;font-size:14px!important;text-align:center!important}
   body.ff-quick .shopcard span:last-child{display:none!important}
@@ -73,6 +87,7 @@
   body.ff-quick .cashbox small,body.ff-quick .field label{font-size:14px!important;color:#3e5248!important;text-transform:none!important;letter-spacing:0!important}
   body.ff-quick .cashbox strong{font-size:28px!important}
   body.ff-quick #cashup .btn.primary,body.ff-quick .btn.primary{background:#14583d!important;color:#fff!important;font-size:20px!important;padding:14px 16px!important}
+  body.ff-quick #cashup .btn.primary:disabled{background:#d5e0d9!important;color:#3e5248!important;cursor:not-allowed}
   body.ff-quick .btn.secondary{background:#fff!important;color:#102018!important;border-color:#1b4332!important}
   body.ff-quick .muted,body.ff-quick .hint{color:#3e5248!important}
   body.ff-quick .toast{background:#102018!important;color:#fff!important;font-size:18px!important}
@@ -173,13 +188,15 @@
   .login input{font-size:20px!important;padding:14px!important;min-height:56px!important;background:#fff!important;color:#102018!important;border:2px solid #1b4332!important}
   .login .btn.primary{font-size:20px!important;min-height:56px!important;padding:14px!important;background:#14583d!important}
   .login .hint,.login .muted{font-size:16px!important;color:#3e5248!important}
+  .ffq-shopline{font-size:18px;font-weight:800;margin-top:2px}
+  body.ff-quick .ffq-shopline{color:#14583d}
+  body.ff-owner .ffq-shopline{color:#9fb8de}
   .ffq-tile:focus-visible,.ffq-save:focus-visible,.ffq-field input:focus-visible{outline:3px solid #0b3d2c;outline-offset:2px}
   `;
   document.head.appendChild(style);
 
   const loginNote = document.querySelector('.login p.muted');
   if (loginNote) loginNote.textContent = 'Sign in to the counter';
-  document.title = 'Superkleen';
 
   function parkDiagnostics() {
     const box = $('productionChecks');
@@ -299,14 +316,14 @@
       let best = null;
       let bestScore = 0;
       (data.services || []).forEach(s => {
-        if (used.has(s.id)) return;
+        if (!onCounter(s) || used.has(s.id)) return;
         const score = scoreSlot(s, slot);
         if (score > bestScore) { bestScore = score; best = s; }
       });
       if (best) { used.add(best.id); picked.push(best); }
     });
     if (picked.length < 8) {
-      const rest = (data.services || []).filter(s => !used.has(s.id) && /dry/i.test(String(s.category || '')));
+      const rest = (data.services || []).filter(s => onCounter(s) && !used.has(s.id) && /dry/i.test(String(s.category || '')));
       rest.sort((a, b) => itemLabel(a).length - itemLabel(b).length);
       rest.forEach(s => {
         if (picked.length >= 8) return;
@@ -329,8 +346,8 @@
 
   function counterServices() {
     const saved = savedPinIds();
-    if (saved) return saved.map(id => data.services.find(s => s.id === id)).filter(Boolean);
-    return defaultServices();
+    const list = saved ? saved.map(id => data.services.find(s => s.id === id)).filter(Boolean) : defaultServices();
+    return list.filter(onCounter).slice(0, 12);
   }
 
   function setPins(ids) {
@@ -681,6 +698,11 @@
       }
       const collected = await sb.rpc('confirm_order_collection', { p_order_id: id, p_collected_by: order.customerName || 'Customer' });
       if (collected.error) {
+        const missing = /function|schema|PGRST202|Could not find the function/i.test(String(collected.error.message || ''));
+        if (!missing) {
+          await refreshAll();
+          return toast(collected.error.message);
+        }
         const upd = await sb.from('orders').update({ status: 'Collected' }).eq('id', id);
         if (upd.error) return toast(collected.error.message);
       }
@@ -741,7 +763,7 @@
     $('ffqPinChips').innerHTML = current.map(s => `<button type="button" data-unpin="${esc(s.id)}">${esc(tileTitle(s, current))} ×</button>`).join('') || '<p class="ffq-hint">No items on the counter yet. Search below to add some.</p>';
     const q = ($('ffqPinSearch').value || '').trim().toLowerCase();
     const shown = new Set(current.map(s => s.id));
-    const rows = q ? (data.services || []).filter(s => [s.category, s.service_group, s.item_name, s.name].join(' ').toLowerCase().includes(q)).slice(0, 40) : [];
+    const rows = q ? (data.services || []).filter(s => onCounter(s) && [s.category, s.service_group, s.item_name, s.name].join(' ').toLowerCase().includes(q)).slice(0, 40) : [];
     $('ffqPinResults').innerHTML = !q
       ? '<p class="ffq-hint">Search the price list, then tap Show on the counter.</p>'
       : (rows.map(s => `<div class="ffq-pinrow"><div><strong>${esc(itemLabel(s))}</strong><small>${esc(s.category || '')} · ${esc(s.service_group || '')} · ${esc(priceLabel(s))}</small></div><button type="button" data-pin="${esc(s.id)}" class="${shown.has(s.id) ? 'on' : ''}">${shown.has(s.id) ? 'On counter' : 'Show'}</button></div>`).join('') || '<p class="ffq-hint">Nothing matches. Try another word.</p>');
@@ -809,7 +831,7 @@
     const q = $('ffqSearchInput').value.trim().toLowerCase();
     const host = $('ffqSearchResults');
     if (!q) { host.innerHTML = '<p class="ffq-hint">Type an item, for example shirt or duvet.</p>'; return; }
-    const rows = (data.services || []).filter(s => [s.category, s.service_group, s.item_name, s.name].join(' ').toLowerCase().includes(q)).slice(0, 30);
+    const rows = (data.services || []).filter(s => onCounter(s) && [s.category, s.service_group, s.item_name, s.name].join(' ').toLowerCase().includes(q)).slice(0, 30);
     host.innerHTML = rows.length ? rows.map(s => `<button type="button" class="ffq-result" data-add="${esc(s.id)}"><span><strong>${esc(itemLabel(s))}</strong><small>${esc(s.category || '')} · ${esc(s.service_group || '')}</small></span><em>${esc(priceLabel(s))}</em></button>`).join('') : '<p class="ffq-hint">Nothing matches. Try another word.</p>';
   }
 
@@ -955,19 +977,58 @@
     if (ownerTab) ownerTab.textContent = admin() ? 'Owner' : 'More';
   }
 
+  function showShopLine(screen) {
+    const heading = $('pageTitle');
+    const name = shopTitle();
+    if (heading) {
+      let line = $('ffqShopLine');
+      if (!line) {
+        line = document.createElement('div');
+        line.id = 'ffqShopLine';
+        line.className = 'ffq-shopline';
+        heading.insertAdjacentElement('afterend', line);
+      }
+      line.textContent = name;
+      line.hidden = !name;
+    }
+    if (name) document.title = screen ? (screen + ' · ' + name) : name;
+  }
+
+  function tuneCashup() {
+    const btn = document.querySelector('#cashup button.primary');
+    if (!btn) return;
+    let note = $('ffqCashNote');
+    if (admin()) {
+      btn.disabled = false;
+      btn.textContent = 'Close daily cash up';
+      if (note) note.remove();
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'The owner closes the till';
+    if (!note) {
+      note = document.createElement('p');
+      note.id = 'ffqCashNote';
+      note.className = 'ffq-hint';
+      note.textContent = "Today's takings are on this screen. Ask the owner to close the till.";
+      btn.insertAdjacentElement('beforebegin', note);
+    }
+  }
+
   function enterCounterChrome(id) {
     document.body.classList.add('ff-quick');
     document.body.classList.remove('ff-owner');
-    document.title = 'Superkleen';
     const tab = { ffqNew: 'new', ffqReady: 'ready', ffqCollect: 'collect', ffqOwner: 'owner', cashup: 'cash' }[id];
     const titles = { ffqNew: 'New docket', ffqReady: 'Ready', ffqCollect: 'Collect', ffqOwner: admin() ? 'Owner' : 'More', cashup: 'Cash up' };
     const heading = $('pageTitle');
     if (heading && titles[id]) heading.textContent = titles[id];
+    showShopLine(titles[id] || '');
     document.querySelectorAll('[data-ffq]').forEach(b => b.classList.toggle('active', b.dataset.ffq === tab));
     if (id === 'ffqNew') renderQuickNew();
     if (id === 'ffqReady') renderReady();
     if (id === 'ffqCollect') renderCollect();
     if (id === 'ffqOwner') renderOwner();
+    if (id === 'cashup') tuneCashup();
     const app = $('app');
     if (app) app.classList.add('ff-booted');
   }
@@ -975,11 +1036,11 @@
   function enterOwnerChrome(title) {
     document.body.classList.remove('ff-quick');
     document.body.classList.add('ff-owner');
-    document.title = 'Superkleen';
     if (title) {
       const heading = $('pageTitle');
       if (heading) heading.textContent = title;
     }
+    showShopLine(title || '');
     document.querySelectorAll('[data-ffq]').forEach(b => b.classList.remove('active'));
     const app = $('app');
     if (app) app.classList.add('ff-booted');
@@ -988,6 +1049,8 @@
   function refreshVisible() {
     applyRoleChrome();
     updateReadyBadge();
+    const heading = $('pageTitle');
+    if (heading && document.body.dataset.ffq) showShopLine(heading.textContent || '');
     if ($('ffqNew') && $('ffqNew').classList.contains('active')) renderQuickNew();
     if ($('ffqReady') && $('ffqReady').classList.contains('active')) renderReady();
     if ($('ffqCollect') && $('ffqCollect').classList.contains('active')) renderCollect();
@@ -1037,6 +1100,15 @@
     window.renderPriceBook = function () {
       const out = prevBook.apply(this, arguments);
       try { enhancePriceBook(); } catch (err) { console.error(err); }
+      return out;
+    };
+  }
+
+  if (typeof window.renderCashup === 'function') {
+    const prevCash = window.renderCashup;
+    window.renderCashup = function () {
+      const out = prevCash.apply(this, arguments);
+      try { if (document.body.classList.contains('ff-quick')) tuneCashup(); } catch (err) { console.error(err); }
       return out;
     };
   }

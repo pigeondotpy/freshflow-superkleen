@@ -3,6 +3,20 @@ window.FRESHFLOW_CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_9wQObf0XPDjW2_Mcv69Qrg_Pmzwd4-D'
 };
 
+/* Hide the old sale screen until Quick Docket is ready. If that script fails to load, show the existing app. */
+(function () {
+  var veil = document.createElement('style');
+  veil.id = 'ffq-veil';
+  veil.textContent = 'html,body{background:#f3f6f4}#app:not(.ff-booted){visibility:hidden}';
+  document.head.appendChild(veil);
+  setTimeout(function () {
+    if (!document.body.dataset.ffq) {
+      var app = document.getElementById('app');
+      if (app) app.classList.add('ff-booted');
+    }
+  }, 8000);
+})();
+
 window.addEventListener('load', () => {
   const script = document.createElement('script');
   script.src = '/v06.js?v=2';
@@ -30,6 +44,15 @@ window.addEventListener('load', () => {
                 ui.onload = () => {
                   const printers = document.createElement('script');
                   printers.src = '/printer-routing-v09.js?v=3';
+                  printers.onload = () => {
+                    const quick = document.createElement('script');
+                    quick.src = '/quick-docket.js?v=3';
+                    quick.onerror = () => {
+                      const app = document.getElementById('app');
+                      if (app) app.classList.add('ff-booted');
+                    };
+                    document.body.appendChild(quick);
+                  };
                   document.body.appendChild(printers);
                 };
                 document.body.appendChild(ui);

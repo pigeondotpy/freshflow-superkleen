@@ -11,8 +11,9 @@ Do this in the Supabase SQL editor for project `qyqokcayqtapiaktszbv`. Run each 
 1. `supabase/migrations/20260822_v05_cashup.sql` if cash-up has never been installed.
 2. `supabase/20260922_printer_routing.sql` if printer routing has never been installed.
 3. `supabase/migrations/20261029_tenant_security_and_branding.sql` for shop isolation, locked-down functions, and per-shop branding.
+4. `supabase/migrations/20261030_branch_service_prices.sql` for a different price, or a hidden item, at one branch. Branches with no row keep the shop price.
 
-Then run `supabase/tests/tenant_isolation.sql`. It rolls back. It should finish with the notice `tenant isolation checks passed`.
+Then run `supabase/tests/tenant_isolation.sql` and `supabase/tests/branch_prices.sql`. Each rolls back. They should finish with `tenant isolation checks passed` and `branch price checks passed`.
 
 Leaked-password protection is a switch in Authentication settings. This repository cannot turn it on. See `SECURITY.md`.
 

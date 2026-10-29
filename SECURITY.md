@@ -62,6 +62,12 @@ A new shop gets a starter list (shirts, suits, duvets, laundry per kilo, pressin
 
 The signed-out screen says FreshFlow. After sign-in, the header and the slip use that shop's settings.
 
+## Branch prices
+
+`services.price` stays the shop price. A row in `branch_service_prices` is optional. No row means that branch charges the shop price, which is how every existing shop works today. A row can set a different price, or hide that service at one branch only.
+
+The till does not trust the price in the request. `create_order` and `create_quote` look up the caller's branch and store that price. Staff can read overrides for their own branch. Owners and admins can read and edit every branch in their shop. Another shop cannot see or write those rows. The check is `supabase/tests/branch_prices.sql`.
+
 Saved favourite stars stay in this browser under the existing storage key, so Superkleen's counter does not lose them. The key is not shown on screen.
 
 ## Not verified here
@@ -70,4 +76,4 @@ Saved favourite stars stay in this browser under the existing storage key, so Su
 - Sign-in as the Superkleen owner was not available in this session, so the live receipt was not printed from production data. The receipt markup was checked in a browser with a second shop's settings, and with Superkleen's stored heading.
 - Email confirmation for new sign-ups depends on the Auth setting. If confirmation is on, the shop is created on the first sign-in, from the details they typed. Those details are stored as sign-up metadata so they survive the email round trip. They are not used to decide which existing shop someone belongs to.
 - There is still no way to add a second staff login to a shop from the app. The first account is the owner. A later account that signs up gets its own shop, not Superkleen's.
-- Quick Docket (pull request 1, branch `cursor/quick-docket-d9d0`) is not merged. It does not change the database. It does set the browser title to Superkleen in `quick-docket.js`, and it stores counter pins under a `superkleen_quick_pins_` key. This branch only changes the config object in `config.js`, not the script loader that Quick Docket edits, so the two should merge. After that merge, the Quick Docket title should use the shop name.
+- Quick Docket (pull request 1, branch `cursor/quick-docket-d9d0`) is not merged. It does not change the database. It does set the browser title to Superkleen in `quick-docket.js`, and it stores counter pins under a `superkleen_quick_pins_` key. This branch only changes the config object in `config.js`, not the script loader that Quick Docket edits, so the two should merge. After that merge, the Quick Docket title should use the shop name. Its tiles read `service.price`, which is the shop price. The order is still saved at the branch price. After the merge, those tiles should use `priceAt(service)` and skip a service when `serviceSellable(service)` is false.

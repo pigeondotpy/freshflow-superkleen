@@ -103,7 +103,7 @@
   window.printReceiptV09=id=>{const o=data.orders.find(x=>x.id===id);if(o)routePrint('receipt',receiptHTML(o),'Receipt #'+o.order_number);};
   window.testPrinterRouteV09=async route=>{
     const html=route==='receipt'
-      ? '<div class="receipt"><h2>FRESHFLOW</h2><div class="center">Printer test</div><hr><div class="receiptline"><span>Route</span><strong>Receipt</strong></div><div class="receiptfoot">Printer configuration successful</div></div>'
+      ? `<div class="receipt"><h2>${E((typeof shopBrand==='function'?shopBrand().title:(data.business?.name||'FreshFlow')))}</h2><div class="center">Printer test</div><hr><div class="receiptline"><span>Route</span><strong>Receipt</strong></div><div class="receiptfoot">Printer configuration successful</div></div>`
       : '<div class="ff-print-report"><h1>FreshFlow printer test</h1><div class="sub">Admin report printer</div><p>If you can read this page, the report print route is working.</p></div>';
     await routePrint(route,html,'FreshFlow printer test');
   };

@@ -8,7 +8,7 @@
   .shell{grid-template-columns:214px minmax(0,1fr)!important}
   .side{background:linear-gradient(180deg,#2477ff 0%,#135bd6 58%,#0e47b6 100%)!important;padding:16px 12px!important;box-shadow:10px 0 35px rgba(0,0,0,.18)}
   .brand{display:flex!important;align-items:center!important;gap:12px!important;padding:4px 8px 18px!important;min-height:52px!important}
-  .brand:after{content:'SUPERKLEEN';display:block!important;font-size:16px!important;font-weight:900!important;letter-spacing:.02em!important;color:#fff!important;line-height:1!important;margin:0!important;position:static!important;transform:none!important;white-space:nowrap!important}
+  .brand:after{content:none!important}.brandname{display:block!important;font-size:14px!important;font-weight:900!important;letter-spacing:0!important;color:#fff!important;line-height:1.05!important;margin:0!important;white-space:normal!important;overflow:hidden;max-width:132px}
   .brandmark{display:grid!important;place-items:center!important;flex:0 0 42px!important;background:#07111f!important;color:#5fe7cf!important;border-radius:50%!important;width:42px!important;height:42px!important;box-shadow:0 0 0 1px rgba(255,255,255,.12)!important;font-size:12px!important;font-weight:900!important;line-height:1!important;overflow:hidden!important}
   .nav{gap:4px!important}
   .navbtn,.nav [data-v07],.nav [data-v07x],.nav [data-v08]{color:#dce8ff!important;background:transparent!important;border-radius:10px!important;text-align:left!important;padding:11px 13px!important;font-size:12px!important;font-weight:700!important;width:100%!important;display:flex!important;align-items:center!important;gap:12px!important;min-height:42px}
@@ -34,17 +34,17 @@
   .poslayout{grid-template-columns:minmax(0,1fr) 330px!important}.poshead{background:#07111f!important}.categories,.subrow{padding-bottom:9px!important}.catbtn,.groupbtn{background:#0e1a2b!important;border-color:#1c2e47!important;color:#c9d6ea!important}.catbtn.active,.groupbtn.active{background:#2477ff!important;color:#fff!important;border-color:#2477ff!important}.product{min-height:78px!important}.product:hover{border-color:#2477ff!important;transform:translateY(-1px)}.product .cat{color:#74839a!important}.product .price{color:#5fe7cf!important}.star{color:#536174!important}.star.on{color:#ffc54a!important}.cart{background:transparent!important}.cartrow,th,td{border-color:#1a2a3f!important}.total{color:#fff!important}
   table{color:#e9f0fb!important}th{color:#7f90a8!important}tr:hover td{background:#0f1c2d!important}.chip{background:#17263a!important;color:#dce7f7!important}.chip.Ready,.chip.paid{background:#103424!important;color:#65e8a5!important}.chip.partial{background:#3a2a12!important;color:#ffc45c!important}
   .cashbox strong,.priceitem strong{color:#fff!important}.notice{background:#2e2411!important;border-color:#5b471b!important;color:#f1cf79!important}.testrow{border-color:#20334d!important}.testrow.pass{background:#102d23!important}.testrow.fail{background:#331b23!important}.testrow.wait{background:#111e30!important}
-  .modalback{background:rgba(0,6,15,.72)!important;backdrop-filter:blur(5px)}.checkoutsummary{background:#091522!important;border-color:#20334d!important}.receipt{background:#fff!important;color:#111!important;padding:14px!important;border-radius:10px!important}.receipt *{color:#111!important}
+  .modalback{background:rgba(0,6,15,.72)!important;backdrop-filter:blur(5px)}.checkoutsummary{background:#091522!important;border-color:#20334d!important}.receipt{background:#fff!important;color:#111!important;padding:14px!important;border-radius:10px!important}.modal .receipt,.modal .receipt h2,.modal .receipt *{color:#111!important}
   .loginwrap{background:radial-gradient(circle at 70% 20%,rgba(36,119,255,.2),transparent 30%),#07111f!important}.login{background:#0e192a!important}.mark{background:#2477ff!important}.login h1{color:#fff!important}
   .toast{background:#17365d!important;color:#fff!important;box-shadow:0 12px 35px rgba(0,0,0,.35)!important}
-  @media(max-width:1100px){.shell{grid-template-columns:176px minmax(0,1fr)!important}.brand:after{font-size:13px!important}.navbtn,.nav [data-v07],.nav [data-v07x],.nav [data-v08]{font-size:11px!important}}
+  @media(max-width:1100px){.shell{grid-template-columns:176px minmax(0,1fr)!important}.brandname{font-size:13px!important;max-width:100px}.navbtn,.nav [data-v07],.nav [data-v07x],.nav [data-v08]{font-size:11px!important}}
   @media(max-width:840px){.shell{display:block!important}.side{background:linear-gradient(90deg,#0d4bbf,#176dff)!important;padding:6px 8px!important}.brand{display:none!important}.nav{display:flex!important;overflow:auto!important;gap:4px!important}.navbtn,.nav [data-v07],.nav [data-v07x],.nav [data-v08]{min-width:76px!important;display:grid!important;text-align:center!important;padding:7px 5px!important;font-size:9px!important;gap:2px!important}.navbtn b,.nav [data-v07] b,.nav [data-v07x] b,.nav [data-v08] b{margin:auto!important}.main{padding:14px 12px 88px!important}.ffdash-kpis{grid-template-columns:repeat(2,1fr)!important}.poslayout{grid-template-columns:1fr!important}.products{grid-template-columns:1fr!important}.ffdash-row,.ffdash-bottom{grid-template-columns:1fr!important}}
   `;
   document.head.appendChild(style);
 
   document.body.classList.add('freshflow-dark');
-  const mark=document.querySelector('.brandmark');if(mark)mark.textContent='SK';
-  const title=document.querySelector('.login p.muted');if(title)title.textContent='Powered by FreshFlow V0.9 Preview';
-  const version=document.querySelector('.shopcard span:last-child');if(version)version.textContent='V0.9 Preview';
-  document.title='FreshFlow V0.9 Preview | Superkleen';
+  const title=document.querySelector('#loginSubtitle');if(title&&document.getElementById('login')&&!document.getElementById('login').classList.contains('hidden'))title.textContent='Dry-cleaning counter for your shop';
+  const version=document.querySelector('.shopcard span:last-child');if(version)version.textContent='FreshFlow';
+  if(typeof applyBrand==='function')applyBrand();
+  else if(!window.profile)document.title='FreshFlow';
 })();

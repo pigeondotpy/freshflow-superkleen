@@ -1059,6 +1059,7 @@
 
   function afterData() {
     applyRoleChrome();
+    if (window.__ffRecovery || sessionStorage.getItem('ff_password_recovery') === '1') return;
     if (!booted && typeof profile !== 'undefined' && profile && profile.id && dataReady) {
       booted = true;
       window.go('ffqNew');

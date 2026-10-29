@@ -46,7 +46,7 @@ window.addEventListener('load', () => {
                   printers.src = '/printer-routing-v09.js?v=3';
                   printers.onload = () => {
                     const quick = document.createElement('script');
-                    quick.src = '/quick-docket.js?v=3';
+                    quick.src = '/quick-docket.js?v=4';
                     quick.onerror = () => {
                       const app = document.getElementById('app');
                       if (app) app.classList.add('ff-booted');
